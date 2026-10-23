@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Збір на ДБЖ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Onest:wght@400;500;700&display=swap">
+<style>
+/* Layout: one narrow column. Summary first, then a keypad of 40 apartment keys like an intercom panel, then who is still missing. */
+:root {
+  color-scheme: light;
+  --bg: #eceff0;
+  --surface: #ffffff;
+  --fg: #182226;
+  --muted: #586870;
+  --line: #cfd7da;
+  --panel: #d9e0e3;
+  --ok: #0d6b63;
+  --on-ok: #ffffff;
+  --warn: #9a5200;
+  --focus: #1b5fd1;
+  --font-body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #11181b; --surface: #1b2529; --fg: #e6eced; --muted: #9aabb2; --line: #2e3b40;
+    --panel: #172024; --ok: #2fa89b; --on-ok: #06201d; --warn: #e0a24a; --focus: #7fb0ff;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+.eyebrow { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+h1 { font-size: clamp(26px, 6vw, 36px); line-height: 1.15; margin: 6px 0 10px; font-weight: 700; }
+.lead { margin: 0; color: var(--muted); max-width: 60ch; }
+.sum { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.big { font-family: var(--font-mono); font-weight: 600; font-size: clamp(28px, 7vw, 38px); }
+.big small { font-size: 0.5em; color: var(--muted); font-weight: 500; }
+.bar { height: 10px; border-radius: 5px; background: var(--panel); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--ok); }
+.meta { display: flex; gap: 8px 20px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.meta b { color: var(--fg); font-weight: 600; }
+.pay { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+h2 { font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; font-weight: 500; }
+.details { margin: 0; font-family: var(--font-mono); font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.status { font-size: 13px; color: var(--muted); }
+.sec { display: flex; flex-direction: column; gap: 12px; }
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font: inherit; font-size: 14px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.panel { background: var(--panel); border-radius: 12px; padding: 12px; }
+.keys { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 620px) { .keys { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
+.key { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 62px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 6px 2px; }
+.key .num { font-family: var(--font-mono); font-weight: 600; font-size: 20px; line-height: 1.1; }
+.key .st { font-size: 12px; color: var(--warn); }
+.key.paid { background: var(--ok); border-color: var(--ok); color: var(--on-ok); }
+.key.paid .st { color: var(--on-ok); }
+.key.more { box-shadow: inset 0 0 0 3px var(--on-ok); }
+.key.more .st { font-weight: 700; }
+.key.dim { opacity: 0.28; }
+.hint { margin: 0; font-size: 14px; color: var(--muted); }
+.left { display: flex; flex-wrap: wrap; gap: 6px; }
+.left span { font-family: var(--font-mono); font-size: 14px; padding: 2px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div id="root" class="wrap"></div>
+<script>
+/* ========= ДАНІ ДОШКИ. Щоб оновити, змініть лише цей блок. ========= */
+var CONFIG = {
+  section: '1 підʼїзд',
+  count: 40,                // кількість квартир
+  amount: 275,              // сума з квартири, грн
+  updated: '23.10.2026',    // дата останнього оновлення
+  paid: [9, 14, 15, 17, 26, 27, 38],   // квартири, які здали рівно 275 грн
+  custom: { 2: 300, 10: 300, 12: 300, 20: 300, 21: 300, 23: 300, 24: 300, 31: 300, 32: 300, 40: 300 },               // квартири, які здали іншу суму: { номер: сума }, наприклад { 5: 300, 18: 350 }
+  details: 'Реквізити для поповнення Банки «На домофон 1 підʼїзд»\n\nОтримувач: Бачинський Іван Костянтинович\nIBAN: UA283220010000026208385341894\nІПН / ЄДРПОУ: 3800508291\nПризначення платежу: Поповнення рахунку Банки'
+};
+/* ==================================================================== */
+
+(function () {
+  var root = document.getElementById('root');
+  var filter = 'all';
+  var paidSet = {}, amounts = {};
+  CONFIG.paid.forEach(function (n) { paidSet[n] = true; });
+  var custom = CONFIG.custom || {};
+  Object.keys(custom).forEach(function (k) { paidSet[k] = true; amounts[k] = Number(custom[k]); });
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function fmt(n) { return n.toLocaleString('uk-UA'); }
+
+  function render() {
+    var n = CONFIG.count, amount = CONFIG.amount;
+    var paidN = 0, collected = 0, moreN = 0, extra = 0, keys = '', left = '', i;
+    for (i = 1; i <= n; i++) {
+      var p = !!paidSet[i];
+      var amt = amounts[i] || amount;
+      var more = p && amt > amount;
+      var dim = (filter === 'paid' && !p) || (filter === 'unpaid' && p) ? ' dim' : '';
+      if (p) { paidN++; collected += amt; }
+      if (more) { moreN++; extra += amt - amount; }
+      var label = !p ? amount + ' грн' : (amt !== amount ? '✓ ' + amt + ' грн' : '✓ здала');
+      keys += '<li class="key' + (p ? ' paid' : '') + (more ? ' more' : '') + dim + '" aria-label="Квартира ' + i + ', ' +
+        (p ? 'здала ' + amt + ' грн' : 'ще не здала') + '">' +
+        '<span class="num">' + i + '</span><span class="st">' + label + '</span></li>';
+      if (!p) left += '<span>' + i + '</span>';
+    }
+    var total = n * amount;
+    var remaining = Math.max(0, total - collected);
+    var pct = total ? Math.min(100, Math.round(collected / total * 100)) : 0;
+    var chips = [['all', 'Усі'], ['paid', 'Здали'], ['unpaid', 'Не здали']].map(function (a) {
+      return '<button class="chip" type="button" data-filter="' + a[0] + '" aria-pressed="' + (filter === a[0]) + '">' + a[1] + '</button>';
+    }).join('');
+    root.innerHTML =
+      '<header><div class="eyebrow">' + esc(CONFIG.section) + ' · ' + n + ' квартир</div>' +
+      '<h1>Збір на ДБЖ для магнітного замка</h1>' +
+      '<p class="lead">З кожної квартири по ' + amount + ' грн. ДБЖ потрібен, щоб магнітний замок працював і без світла.</p></header>' +
+      '<section class="sum" aria-label="Скільки зібрано"><div class="big">' + fmt(collected) + ' <small>/ ' + fmt(total) + ' грн</small></div>' +
+      '<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="meta"><span>Здали: <b>' + paidN + '</b> з ' + n + '</span><span>Лишилось квартир: <b>' + (n - paidN) + '</b></span><span>Ще зібрати: <b>' + fmt(remaining) + ' грн</b></span>' +
+      (moreN ? '<span>Здали більше: <b>' + moreN + ' кв. (+' + fmt(extra) + ' грн)</b></span>' : '') + '</div>' +
+      '<div class="hint">Оновлено ' + esc(CONFIG.updated) + '</div></section>' +
+      '<section class="pay"><h2>Куди переказувати</h2><p class="details" id="details-text">' + esc(CONFIG.details) + '</p>' +
+      '<div class="row"><button class="btn" type="button" data-copy="1">Скопіювати реквізити</button><span class="status" id="copy-status"></span></div></section>' +
+      '<section class="sec"><div class="sec-head"><h2>Квартири</h2><div class="chips">' + chips + '</div></div>' +
+      '<div class="panel"><ul class="keys">' + keys + '</ul></div>' +
+      (moreN ? '<p class="hint">Квартири з рамкою здали більше ніж ' + amount + ' грн, сума вказана на квартирі.</p>' : '') + '</section>' +
+      '<section class="sec"><h2>Ще не здали (' + (n - paidN) + ')</h2>' +
+      (n - paidN ? '<div class="left">' + left + '</div>' : '<p class="hint">Усі ' + n + ' квартир здали.</p>') + '</section>';
+  }
+
+  function selectDetails() {
+    var el = document.getElementById('details-text');
+    if (!el) return;
+    var r = document.createRange(); r.selectNodeContents(el);
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  }
+
+  root.addEventListener('click', function (e) {
+    var f = e.target.closest('[data-filter]');
+    if (f) { filter = f.getAttribute('data-filter'); render(); return; }
+    if (e.target.closest('[data-copy]')) {
+      var st = document.getElementById('copy-status');
+      var say = function (m) { if (st) st.textContent = m; };
+      var fallback = function () { selectDetails(); say('Виділено, скопіюйте вручну'); };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(CONFIG.details).then(function () { say('Скопійовано'); }, fallback);
+        } else { fallback(); }
+      } catch (x) { fallback(); }
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
